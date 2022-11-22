@@ -10,24 +10,24 @@ import (
 )
 
 // Global DB variable
-var database *sql.DB
+var data *sql.DB
 
 // Initializing DB
 func TestDb(t *testing.T) {
 	var err error
-	database, err = db.Connect()
+	data, err = db.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
 }
-
 // Function InsertAuthor Function in Author (Right input)
 func TestInsertAuthor(t *testing.T) {
-	err := InsertAuthor(database, "omar")
+	p := db.Author{Name: "nilson mandella"}
+	err := InsertAuthor(data, &p)
 	if err != nil {
 	t.Fatal(err)
 	}
-	rows, _ := database.Query("SELECT * FROM author")
+	rows, _ := data.Query("SELECT * FROM author")
 	inc := 1
 	var id int
 	var name string
@@ -42,12 +42,30 @@ func TestInsertAuthor(t *testing.T) {
 }
 
 // Function SearchAuthor Function in Author (Right input)
-func TestSearchAuthor(t *testing.T) {
-	id, err := SearchAuthor(database, "omar")
+func TestSearchAuthorByName(t *testing.T) {
+
+	name := "omar"
+
+	author, err := SearchAuthorByName(data, name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id == 1 {
+	if author.Id == 0 {
+		t.Log(author.Name)
+		t.Log(author.Id)
+		t.Fatal("author not in database")
+	}
+
+}
+
+
+func TestSearchAuthorById(t *testing.T) {
+	author, err := SearchAuthorById(data, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if author.Name == "" {
+		t.Log("here")
 		t.Fatal("error not in database")
 	}
 
