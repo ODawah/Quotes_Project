@@ -8,5 +8,6 @@ type Author struct {
 type Quote struct {
 	Id int
 	Text string
-	AuthorId string
+	AuthorName string
+	AuthorId int
 }

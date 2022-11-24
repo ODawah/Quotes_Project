@@ -10,13 +10,16 @@ import (
 
 func InsertAuthor(db *sql.DB,author *database.Author) error {
 	if author.Name == "" {
-		return errors.New("enter a the name of Author")
+		return errors.New("enter the name of Author")
 	}
-	var statement, err = db.Prepare("INSERT INTO Author(name) VALUES(?)")
+	var statement, err = db.Exec("INSERT INTO Author(name) VALUES(?)", author.Name)
 	if err != nil {
 		return err
 	}
-	statement.Exec(author.Name)
+	id, err := statement.LastInsertId()
+	if err != nil || id == 0 {
+		return err
+	}
 	return nil
 }
 
@@ -53,3 +56,26 @@ func SearchAuthorById(db *sql.DB, id int) (*database.Author, error) {
 	return &author, nil
 }
 
+func InsertQuote(database *sql.DB,quote *database.Quote) error {
+	if quote.Id != 0 {
+		author, err := SearchAuthorById(database, quote.Id)
+		if err != nil {
+			return err
+		}
+		quote.AuthorId = author.Id
+		quote.AuthorName = author.Name
+	} else if quote.AuthorName != "" {
+		author, err := SearchAuthorByName(database, quote.AuthorName)
+		if err != nil {
+			return err
+		}
+		quote.AuthorId = author.Id
+		quote.AuthorName = author.Name
+	}
+	var statement, err = database.Prepare("INSERT INTO quote(q_text,author_id) VALUES(?, ?)")
+	if err != nil {
+		return err
+	}
+	statement.Exec(quote.Text, quote.AuthorId)
+	return nil
+}

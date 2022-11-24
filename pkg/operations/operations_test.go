@@ -2,6 +2,7 @@ package operations
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"testing"
@@ -20,28 +21,29 @@ func TestDb(t *testing.T) {
 		log.Fatal(err)
 	}
 }
-// Function InsertAuthor Function in Author (Right input)
+
+
 func TestInsertAuthor(t *testing.T) {
-	p := db.Author{Name: "nilson mandella"}
-	err := InsertAuthor(data, &p)
-	if err != nil {
-	t.Fatal(err)
+	type test struct {
+		input db.Author
+		output  error
 	}
-	rows, _ := data.Query("SELECT * FROM author")
-	inc := 1
-	var id int
-	var name string
-	for rows.Next() {
-		rows.Scan(&id, &name)
-		if id != inc {
-			t.Fatal(fmt.Sprintf("got = %d :  expected = %d", id, inc))
+	err := errors.New("enter the name of Author")
+	tests := []test{
+		{input: db.Author{Name: "omar"}, output: nil},
+		{input: db.Author{Name: ""}, output: err},
+	}
+
+	for _, tc := range tests {
+		got := InsertAuthor(data, &tc.input)
+
+		if fmt.Sprint(got) != fmt.Sprint(tc.output) {
+			t.Fatal(fmt.Sprintf("expected: %s, got: %s", tc.output, got))
 		}
-		inc += 1
 	}
 
 }
 
-// Function SearchAuthor Function in Author (Right input)
 func TestSearchAuthorByName(t *testing.T) {
 
 	name := "omar"
@@ -70,3 +72,48 @@ func TestSearchAuthorById(t *testing.T) {
 	}
 
 }
+
+func TestInsertQuote_By_Name(t *testing.T) {
+	p := db.Quote{
+		Text:       "heaven is for real",
+		AuthorName: "omar",
+		AuthorId:   0,
+	}
+	err := InsertQuote(data, &p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := data.Query("SELECT * FROM quote")
+	var got db.Quote
+
+	for rows.Next() {
+		rows.Scan(&got.Id, &got.Text, &got.AuthorId)
+		if got.Text != p.Text {
+			t.Fatal("error")
+		}
+	}
+
+}
+
+func TestInsertQuote_By_id(t *testing.T) {
+	p := db.Quote{
+		Id: 2,
+		Text:       "heaven is for real",
+		AuthorId:   0,
+	}
+	err := InsertQuote(data, &p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := data.Query("SELECT * FROM quote")
+	var got db.Quote
+
+	for rows.Next() {
+		rows.Scan(&got.Id, &got.Text, &got.AuthorId)
+		if got.Text != p.Text {
+			t.Fatal("error")
+		}
+	}
+
+}
+
