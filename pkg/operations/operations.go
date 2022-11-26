@@ -28,16 +28,13 @@ func SearchAuthorByName(db *sql.DB, name string) (*database.Author, error) {
 	if name == "" {
 		return nil, errors.New("no name entered")
 	}
-
-	name = "%" + name + "%"
-	var rows, err = db.Query(fmt.Sprintf("SELECT * FROM author WHERE name LIKE \"%s\" LIMIT 1", name))
+	statement, err :=  db.Prepare("SELECT * FROM author WHERE name LIKE ? ")
 	if err != nil {
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
-	for rows.Next() {
-		rows.Scan(&author.Id,&author.Name)
+	err = statement.QueryRow(name).Scan(&author.Id, &author.Name)
+	if err != nil {
+		return nil, err
 	}
 	return &author, nil
 }
@@ -51,31 +48,85 @@ func SearchAuthorById(db *sql.DB, id int) (*database.Author, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer statement.Close()
 	err = statement.QueryRow(id).Scan(&author.Id, &author.Name)
+	if err != nil {
+		return nil, err
+	}
 	return &author, nil
 }
 
-func InsertQuote(database *sql.DB,quote *database.Quote) error {
-	if quote.Id != 0 {
-		author, err := SearchAuthorById(database, quote.Id)
-		if err != nil {
+func InsertQuote(db *sql.DB,quote *database.Quote) error {
+	if quote.AuthorId != 0 {
+		author, err := SearchAuthorById(db, quote.AuthorId)
+		if err != nil{
 			return err
 		}
 		quote.AuthorId = author.Id
 		quote.AuthorName = author.Name
 	} else if quote.AuthorName != "" {
-		author, err := SearchAuthorByName(database, quote.AuthorName)
+		var a *database.Author
+		a, err := SearchAuthorByName(db, quote.AuthorName)
 		if err != nil {
-			return err
+			a.Name = quote.AuthorName
+			err = InsertAuthor(db,a)
+			if err != nil {
+				return err
+			}
 		}
-		quote.AuthorId = author.Id
-		quote.AuthorName = author.Name
+		quote.AuthorId = a.Id
+		quote.AuthorName = a.Name
+	}else if quote.AuthorId == 0 && quote.AuthorName == "" {
+		return errors.New("no info about the author")
 	}
-	var statement, err = database.Prepare("INSERT INTO quote(q_text,author_id) VALUES(?, ?)")
+	var statement, err = db.Exec("INSERT INTO quote(q_text,author_id) VALUES(?, ?)",quote.Text,quote.AuthorId)
 	if err != nil {
 		return err
 	}
-	statement.Exec(quote.Text, quote.AuthorId)
+	id, err := statement.LastInsertId()
+	if id == 0 || err != nil {
+		return err
+	}
 	return nil
+}
+
+func FindAuthorQuotes(db *sql.DB, name string) (*database.AuthorQuotes,error) {
+	var result database.AuthorQuotes
+	if name == "" {
+		return nil, errors.New("no author name entered")
+	}
+	author, err := SearchAuthorByName(db, name)
+	if err != nil || author.Id == 0 {
+		return nil, err
+	}
+
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM quote WHERE author_id = %d ",author.Id))
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var q database.Quote
+		rows.Scan(&q.Id,&q.Text,&q.AuthorId)
+		result.Quotes = append(result.Quotes, q)
+	}
+
+	return &result, nil
+}
+
+func FindQuote(db *sql.DB, quote string) (*database.Quote, error){
+		var result database.Quote
+		if quote == "" {
+			return nil, errors.New("no quote text entered")
+		}
+		statement, err :=  db.Prepare("SELECT * FROM quote WHERE q_text LIKE ? ")
+		if err != nil {
+			return nil, err
+		}
+		err = statement.QueryRow(quote).Scan(&result.Id, &result.Text,&result.AuthorId)
+		if err != nil {
+			return nil, err
+		}
+		author, _ := SearchAuthorById(db,result.AuthorId)
+		result.AuthorName = author.Name
+		return &result, nil
+
 }

@@ -17,7 +17,7 @@ func Connect() (*sql.DB, error) {
 		db = database
 		statement, _ := db.Prepare("CREATE TABLE IF NOT EXISTS  author (id INTEGER PRIMARY KEY AUTOINCREMENT , name TEXT NOT NULL)")
 		statement.Exec()
-		statement, _ = db.Prepare("CREATE TABLE IF NOT EXISTS  quote (q_id INTEGER PRIMARY KEY AUTOINCREMENT , q_text TEXT, author_id INTEGER NOT NULL, FOREIGN KEY (author_id) REFERENCES Author(id))")
+		statement, _ = db.Prepare("CREATE TABLE IF NOT EXISTS  quote (q_id INTEGER PRIMARY KEY AUTOINCREMENT , q_text TEXT NOT NULL UNIQUE , author_id INTEGER NOT NULL, FOREIGN KEY (author_id) REFERENCES Author(id))")
 		statement.Exec()
 
 	})

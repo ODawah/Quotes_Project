@@ -22,16 +22,14 @@ func TestDb(t *testing.T) {
 	}
 }
 
-
 func TestInsertAuthor(t *testing.T) {
 	type test struct {
-		input db.Author
-		output  error
+		input  db.Author
+		output error
 	}
-	err := errors.New("enter the name of Author")
 	tests := []test{
 		{input: db.Author{Name: "omar"}, output: nil},
-		{input: db.Author{Name: ""}, output: err},
+		{input: db.Author{Name: ""}, output: errors.New("enter the name of Author")},
 	}
 
 	for _, tc := range tests {
@@ -45,75 +43,113 @@ func TestInsertAuthor(t *testing.T) {
 }
 
 func TestSearchAuthorByName(t *testing.T) {
-
-	name := "omar"
-
-	author, err := SearchAuthorByName(data, name)
-	if err != nil {
-		t.Fatal(err)
+	type test struct {
+		input  string
+		outErr error
 	}
-	if author.Id == 0 {
-		t.Log(author.Name)
-		t.Log(author.Id)
-		t.Fatal("author not in database")
+
+	tests := []test{
+		{input: "omar", outErr: nil},
+		{input: "maged", outErr: errors.New("sql: no rows in result set")},
+		{input: "", outErr: errors.New("no name entered")},
+	}
+
+	for _, tc := range tests {
+		got, gotErr := SearchAuthorByName(data, tc.input)
+		if fmt.Sprint(gotErr) != fmt.Sprint(tc.outErr) && got.Id != 0 {
+			t.Fatal(fmt.Sprintf("expected: %s, got: %s", tc.outErr, gotErr))
+		}
 	}
 
 }
-
 
 func TestSearchAuthorById(t *testing.T) {
-	author, err := SearchAuthorById(data, 5)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if author.Name == "" {
-		t.Log("here")
-		t.Fatal("error not in database")
+	type test struct {
+		input  int
+		output *db.Author
 	}
 
-}
-
-func TestInsertQuote_By_Name(t *testing.T) {
-	p := db.Quote{
-		Text:       "heaven is for real",
-		AuthorName: "omar",
-		AuthorId:   0,
+	tests := []test{
+		{input: 1, output: &db.Author{Name: "omar", Id: 1}},
+		{input: 50, output: nil},
+		{input: 0},
 	}
-	err := InsertQuote(data, &p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rows, _ := data.Query("SELECT * FROM quote")
-	var got db.Quote
 
-	for rows.Next() {
-		rows.Scan(&got.Id, &got.Text, &got.AuthorId)
-		if got.Text != p.Text {
-			t.Fatal("error")
+	for _, tc := range tests {
+		got, gotErr := SearchAuthorById(data, tc.input)
+		if got != tc.output && gotErr != nil {
+			t.Fatal(fmt.Sprintf("expected: %s, got: %s", tc.output.Name, gotErr))
 		}
 	}
 
 }
 
-func TestInsertQuote_By_id(t *testing.T) {
-	p := db.Quote{
-		Id: 2,
-		Text:       "heaven is for real",
-		AuthorId:   0,
+func TestInsertQuote(t *testing.T) {
+	type test struct {
+		input  db.Quote
+		output error
 	}
-	err := InsertQuote(data, &p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rows, _ := data.Query("SELECT * FROM quote")
-	var got db.Quote
 
-	for rows.Next() {
-		rows.Scan(&got.Id, &got.Text, &got.AuthorId)
-		if got.Text != p.Text {
-			t.Fatal("error")
+	tests := []test{
+		{input: db.Quote{Text: "work hard3.6", AuthorName: "omar"}, output: nil}, // insert Quote with author in db
+		{input: db.Quote{Text: "bring the light3.6", AuthorName: "badr"}, output: nil}, // insert Quote with author not in db
+		{input: db.Quote{Text: "build your career3.6", AuthorId: 2}, output: nil}, // insert Quote with author id in db
+		{input: db.Quote{Text: "build your path3.6", AuthorId: 100}, output: errors.New("sql: no rows in result set")}, // insert Quote with author id not in db
+		{input: db.Quote{Text: "look at the sun3.6"}, output: errors.New("no info about the author")}, // insert Quote with no author info
+	}
+
+	for i, tc := range tests {
+		gotErr := InsertQuote(data, &tc.input)
+		if fmt.Sprint(tc.output) != fmt.Sprint(gotErr) {
+			t.Fatal(fmt.Sprintf("%d: expected: %s, got: %s", i, fmt.Sprint(tc.output), fmt.Sprint(gotErr)))
+		}
+	}
+}
+
+
+func TestFindAuthorQuotes(t *testing.T) {
+	type test struct {
+		input  string
+		output error
+	}
+
+	tests := []test{
+		{input: "omar", output: nil},
+		{input: "peter", output: errors.New("sql: no rows in result set") },
+		{input: "", output: errors.New("no author name entered")},
+	}
+
+	for i, tc := range tests {
+		got ,gotErr := FindAuthorQuotes(data, tc.input)
+		if got == nil && fmt.Sprint(gotErr) !=  fmt.Sprint(tc.output) {
+			t.Fatal(fmt.Sprintf("%d: expected: %s, got: %s", i, fmt.Sprint(tc.output), fmt.Sprint(gotErr)))
 		}
 	}
 
 }
+
+func TestFindQuote(t *testing.T) {
+	type test struct {
+		input  string
+		output error
+	}
+
+	tests := []test{
+		{input: "work hard", output: nil},
+		{input: "not in db quote", output: errors.New("sql: no rows in result set") },
+		{input: "", output: errors.New("no quote text entered")},
+	}
+
+	for i, tc := range tests {
+		got ,gotErr := FindQuote(data, tc.input)
+		t.Log(got)
+		if got == nil && fmt.Sprint(gotErr) !=  fmt.Sprint(tc.output) {
+			t.Fatal(fmt.Sprintf("%d: expected: %s, got: %s", i, fmt.Sprint(tc.output), fmt.Sprint(gotErr)))
+		}
+	}
+
+}
+
+
+
 

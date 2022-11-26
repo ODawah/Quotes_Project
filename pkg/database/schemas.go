@@ -11,3 +11,8 @@ type Quote struct {
 	AuthorName string
 	AuthorId int
 }
+
+type AuthorQuotes struct {
+	Auth Author
+	Quotes []Quote
+}
