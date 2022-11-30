@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Quotes_Project/pkg/database"
 )
@@ -12,6 +13,7 @@ func InsertAuthor(db *sql.DB,author *database.Author) error {
 	if author.Name == "" {
 		return errors.New("enter the name of Author")
 	}
+	author.Name = strings.ToLower(author.Name)
 	var statement, err = db.Exec("INSERT INTO Author(name) VALUES(?)", author.Name)
 	if err != nil {
 		return err
@@ -28,6 +30,7 @@ func SearchAuthorByName(db *sql.DB, name string) (*database.Author, error) {
 	if name == "" {
 		return nil, errors.New("no name entered")
 	}
+	name = strings.ToLower(name)
 	statement, err :=  db.Prepare("SELECT * FROM author WHERE name LIKE ? ")
 	if err != nil {
 		return nil, err
@@ -56,6 +59,8 @@ func SearchAuthorById(db *sql.DB, id int) (*database.Author, error) {
 }
 
 func InsertQuote(db *sql.DB,quote *database.Quote) error {
+	quote.AuthorName = strings.ToLower(quote.AuthorName)
+	quote.Text = strings.ToLower(quote.AuthorName)
 	if quote.AuthorId != 0 {
 		author, err := SearchAuthorById(db, quote.AuthorId)
 		if err != nil{
@@ -94,6 +99,7 @@ func FindAuthorQuotes(db *sql.DB, name string) (*database.AuthorQuotes,error) {
 	if name == "" {
 		return nil, errors.New("no author name entered")
 	}
+	name = strings.ToLower(name)
 	author, err := SearchAuthorByName(db, name)
 	if err != nil || author.Id == 0 {
 		return nil, err
@@ -121,6 +127,7 @@ func FindQuote(db *sql.DB, quote string) (*database.Quote, error){
 		if err != nil {
 			return nil, err
 		}
+		quote = strings.ToLower(quote)
 		err = statement.QueryRow(quote).Scan(&result.Id, &result.Text,&result.AuthorId)
 		if err != nil {
 			return nil, err
