@@ -16,3 +16,7 @@ type AuthorQuotes struct {
 	Auth   Author  `json:"auth"`
 	Quotes []Quote `json:"quotes"`
 }
+
+type SearchQuote struct {
+	Text string `json:"text"`
+}

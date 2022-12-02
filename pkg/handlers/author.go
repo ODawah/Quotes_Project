@@ -9,13 +9,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var DB, err = db.Connect()
+
 func GetAuthorByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	author, err := operations.SearchAuthorById(db.DB, id)
+	author, err := operations.SearchAuthorById(DB, id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -30,7 +32,7 @@ func GetAuthorByName(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No name inserted"})
 		return
 	}
-	author, err := operations.SearchAuthorByName(db.DB, name)
+	author, err := operations.SearchAuthorByName(DB, name)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -45,7 +47,7 @@ func CreateAuthor(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err = operations.InsertAuthor(db.DB, input)
+	err = operations.InsertAuthor(DB, input)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
